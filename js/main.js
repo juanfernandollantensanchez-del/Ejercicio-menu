@@ -12,74 +12,88 @@ const resultadosDiv = document.getElementById('resultados');
 const btnTest = document.getElementById('btnTest');
 const testStatus = document.getElementById('test-status');
 
-// 1. FUNCION CALCULAR (Normal)
+// 1. FUNCIÓN CALCULADORA (Uso manual)
 function calcular() {
     try {
-        const operacion = operacionSelect.value;
+        const operacion = operacionSelect.value; // ej: 'ex28'
         const num1 = parseFloat(numero1Input.value) || 0;
         const valGeneral = inputGeneral.value;
         let resultado;
 
-        switch (operacion) {
-            case 'ex26': resultado = combine.ejer.ex26({ subarrayInput: valGeneral }); break;
-            case 'ex27': resultado = combine.ejer.ex27({ array1Input: valGeneral, array2Input: numero2Input.value }); break;
-            case 'ex28': resultado = combine.ejer.ex28({ primeLimitInput: num1 }); break;
-            case 'ex29': resultado = combine.ejer.ex29({ matrixInput: valGeneral }); break;
-            case 'ex30': resultado = combine.ejer.ex30({ mergeSortInput: valGeneral }); break;
-            case 'nombre': resultado = { result: `👤 Autor: ${combine.name}` }; break;
-            default: throw new Error('Operación no implementada');
+        // Llamada dinámica usando el objeto exportado
+        if (operacion === 'nombre') {
+            resultado = { result: `👤 Autor: ${combine.name}` };
+        } else {
+            // Aquí combine.ejer[operacion] equivale a combine.ejer.ex28(...)
+            resultado = combine.ejer[operacion]({ 
+                subarrayInput: valGeneral,
+                array1Input: valGeneral,
+                array2Input: numero2Input.value,
+                primeLimitInput: num1,
+                matrixInput: valGeneral,
+                mergeSortInput: valGeneral
+            });
         }
 
         resultadosDiv.innerText = resultado.result;
         resultadosDiv.style.color = "#2ecc71";
-        resultadosDiv.style.borderColor = "#2ecc71";
     } catch (error) {
         resultadosDiv.innerText = `❌ Error: ${error.message}`;
         resultadosDiv.style.color = "#e74c3c";
-        resultadosDiv.style.borderColor = "#e74c3c";
     }
 }
 
-// 2. FUNCION DE TESTING (Validación)
+// 2. SISTEMA DE TESTING MASIVO (Verifica todos a la vez)
 const baseDeTests = {
-    ex26: { input: { subarrayInput: "-2,1,-3,4,-1,2,1,-5,4" }, esperado: "6" },
-    ex27: { input: { array1Input: "1,3,5", array2Input: "2,4,6" }, esperado: "1, 2, 3, 4, 5, 6" },
-    ex28: { input: { primeLimitInput: 10 }, esperado: "2, 3, 5, 7" },
-    ex29: { input: { matrixInput: "1,2;3,4" }, esperado: "1, 3, 2, 4" },
-    ex30: { input: { mergeSortInput: "5, 2, 9, 1" }, esperado: "1, 2, 5, 9" }
+    ex26: { nombre: "Ejercicio 26 (Suma)", input: { subarrayInput: "-2,1,-3,4,-1,2,1,-5,4" }, esperado: "6" },
+    ex27: { nombre: "Ejercicio 27 (Merge)", input: { array1Input: "1,3,5", array2Input: "2,4,6" }, esperado: "1, 2, 3, 4, 5, 6" },
+    ex28: { nombre: "Ejercicio 28 (Primos)", input: { primeLimitInput: 10 }, esperado: "2, 3, 5, 7" },
+    ex29: { nombre: "Ejercicio 29 (Matriz)", input: { matrixInput: "1,2;3,4" }, esperado: "1, 3, 2, 4" },
+    ex30: { nombre: "Ejercicio 30 (Sort)", input: { mergeSortInput: "5, 2, 9, 1" }, esperado: "1, 2, 5, 9" }
 };
 
-function ejecutarTesting() {
-    const id = operacionSelect.value;
-    const prueba = baseDeTests[id];
+function ejecutarTestingCompleto() {
+    testStatus.innerHTML = "<strong>Iniciando Pruebas Unitarias...</strong><br><br>";
+    let contadorAprobados = 0;
+    const totalPruebas = Object.keys(baseDeTests).length;
 
-    if (!prueba) {
-        testStatus.innerText = "⚠️ No hay tests para esta opción.";
-        testStatus.style.color = "#f39c12";
-        return;
-    }
+    Object.keys(baseDeTests).forEach(id => {
+        const prueba = baseDeTests[id];
+        const linea = document.createElement('div');
+        linea.style.marginBottom = "8px";
 
-    try {
-        testStatus.innerText = "Ejecutando... ⏳";
-        testStatus.style.color = "#3498db";
+        try {
+            // EJECUCIÓN CON EXPORT:
+            // Accedemos a la función exportada dinámicamente
+            const respuesta = combine.ejer[id](prueba.input);
+            const obtenido = String(respuesta.result).trim();
 
-        // Llamada a combine.ejer[ex28](...) etc.
-        const respuesta = combine.ejer[id](prueba.input);
-        const obtenido = String(respuesta.result).trim();
-
-        if (obtenido.includes(prueba.esperado)) {
-            testStatus.innerText = `✅ APROBADO: Ejercicio ${id} funcionando.`;
-            testStatus.style.color = "#2ecc71";
-        } else {
-            testStatus.innerText = `❌ DESAPROBADO: Se esperaba "${prueba.esperado}" pero se recibió "${obtenido}"`;
-            testStatus.style.color = "#e67e22";
+            if (obtenido.includes(prueba.esperado)) {
+                linea.innerHTML = `🔹 ${prueba.nombre}: <span style="color: #2ecc71; font-weight:bold;">APROBADO ✅</span>`;
+                contadorAprobados++;
+            } else {
+                linea.innerHTML = `🔹 ${prueba.nombre}: <span style="color: #e67e22; font-weight:bold;">DESAPROBADO ❌</span> <br> <small>Esperaba "${prueba.esperado}" pero llegó "${obtenido}"</small>`;
+            }
+        } catch (error) {
+            linea.innerHTML = `🔹 ${prueba.nombre}: <span style="color: #e74c3c; font-weight:bold;">ERROR DE CÓDIGO 💥</span> <br> <small>${error.message}</small>`;
         }
-    } catch (error) {
-        testStatus.innerText = `💥 ERROR EN CÓDIGO: ${error.message}`;
-        testStatus.style.color = "#e74c3c";
+        testStatus.appendChild(linea);
+    });
+
+    // Resultado final
+    const resumen = document.createElement('div');
+    resumen.style.marginTop = "15px";
+    resumen.style.paddingTop = "10px";
+    resumen.style.borderTop = "2px solid #ddd";
+    
+    if (contadorAprobados === totalPruebas) {
+        resumen.innerHTML = `<h3 style="color: #2ecc71;">🏆 TODO APROBADO (${contadorAprobados}/${totalPruebas})</h3>`;
+    } else {
+        resumen.innerHTML = `<h3 style="color: #e74c3c;">⚠️ REPROBADO (${contadorAprobados}/${totalPruebas} pasaron)</h3>`;
     }
+    testStatus.appendChild(resumen);
 }
 
-// Escuchadores
+// Escuchadores de eventos
 btncalcular.addEventListener('click', calcular);
-btnTest.addEventListener('click', ejecutarTesting);
+btnTest.addEventListener('click', ejecutarTestingCompleto);
